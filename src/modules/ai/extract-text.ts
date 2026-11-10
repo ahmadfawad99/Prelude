@@ -7,21 +7,13 @@ import mammoth from "mammoth";
 export async function extractText(buf: Buffer, filename: string, mime: string): Promise<string> {
   const lower = (filename || "").toLowerCase();
 
-  // PDF
+  // PDF — use unpdf's serverless pdf.js build (no DOMMatrix/canvas needed, so it
+  // runs in Vercel's Node runtime where pdf-parse/pdfjs throws "DOMMatrix is not defined").
   if (lower.endsWith(".pdf") || mime === "application/pdf") {
-    const { PDFParse } = await import("pdf-parse");
-    // pdf-parse v2 exposes a PDFParse class.
-    const parser = new (PDFParse as unknown as new (o: { data: Uint8Array }) => {
-      getText(): Promise<{ text?: string }>;
-      destroy?: () => Promise<void>;
-    })({ data: new Uint8Array(buf) });
-    const res = await parser.getText();
-    try {
-      await parser.destroy?.();
-    } catch {
-      /* ignore */
-    }
-    return typeof res?.text === "string" ? res.text : "";
+    const { extractText: pdfExtractText, getDocumentProxy } = await import("unpdf");
+    const pdf = await getDocumentProxy(new Uint8Array(buf));
+    const { text } = await pdfExtractText(pdf, { mergePages: true });
+    return text ?? "";
   }
 
   // Word (.docx)

@@ -21,7 +21,14 @@ export async function addFileSource(
   mime: string,
   buf: Buffer,
 ) {
-  const content = (await extractText(buf, filename, mime)).trim();
+  // Never let a text-extraction failure drop the source — attach it either way.
+  let content = "";
+  try {
+    content = (await extractText(buf, filename, mime)).trim();
+  } catch (e) {
+    console.error("[source] text extraction failed", filename, e);
+    content = `[Could not extract text from "${filename}". The file was attached but its contents aren't searchable.]`;
+  }
   const src = await prisma.source.create({
     data: { inquiryId, addedById, kind: "FILE", name: filename, content },
   });
