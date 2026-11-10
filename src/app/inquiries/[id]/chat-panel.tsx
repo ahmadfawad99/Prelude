@@ -2,7 +2,7 @@
 
 import { useEffect, useOptimistic, useRef, useState, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { sendChatAction } from "../actions";
 import { useArtifact, type ArtifactId } from "@/components/notebook-shell";
@@ -208,10 +208,9 @@ function nodeText(children: unknown): string {
   return "";
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const MD_COMPONENTS: Record<string, any> = {
+const MD_COMPONENTS: Components = {
   // Render ```mermaid fences as live diagrams; everything else as a normal <pre>.
-  pre({ children }: { children: ReactNode }) {
+  pre({ children }: { children?: ReactNode }) {
     const child = Array.isArray(children) ? children[0] : children;
     const cls = (child as { props?: { className?: string } })?.props?.className ?? "";
     if (typeof cls === "string" && cls.includes("language-mermaid")) {
