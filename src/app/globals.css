@@ -1,0 +1,267 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 240 24% 99%;
+  --foreground: 240 20% 15%;
+  --card: 0 0% 100%;
+  --muted: 240 16% 96%;
+  --muted-foreground: 240 6% 46%;
+  --primary: 243 75% 59%;
+  --primary-foreground: 0 0% 100%;
+  --accent-from: 239 84% 67%;
+  --accent-to: 262 83% 64%;
+  --border: 240 13% 91%;
+  --ring: 243 75% 59%;
+  --shadow-color: 240 30% 40%;
+}
+
+:root[data-theme="dark"] {
+  --background: 240 18% 10%;
+  --foreground: 240 20% 92%;
+  --card: 240 16% 13%;
+  --muted: 240 12% 18%;
+  --muted-foreground: 240 10% 62%;
+  --primary: 243 80% 68%;
+  --primary-foreground: 240 20% 10%;
+  --accent-from: 239 84% 70%;
+  --accent-to: 262 83% 70%;
+  --border: 240 10% 22%;
+  --ring: 243 80% 68%;
+  --shadow-color: 240 40% 2%;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+html {
+  font-size: 16px;
+}
+html,
+body {
+  min-height: 100%;
+  color: hsl(var(--foreground));
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+body {
+  background: hsl(var(--background));
+  background-attachment: fixed;
+}
+
+::selection {
+  background: hsl(var(--primary) / 0.18);
+}
+
+/* Smooth motion on interactive elements */
+a,
+button,
+select,
+input,
+textarea,
+[role="button"],
+.card-i {
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.2s ease,
+    transform 0.15s ease,
+    opacity 0.15s ease,
+    filter 0.15s ease;
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium text-white;
+    background-image: linear-gradient(135deg, hsl(var(--accent-from)), hsl(var(--accent-to)));
+    box-shadow: 0 1px 2px hsl(var(--shadow-color) / 0.2), 0 2px 8px hsl(var(--accent-to) / 0.25);
+  }
+  .btn-primary:hover {
+    filter: brightness(1.07);
+    box-shadow: 0 2px 4px hsl(var(--shadow-color) / 0.2), 0 6px 16px hsl(var(--accent-to) / 0.33);
+    transform: translateY(-1px);
+  }
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3.5 py-2 text-sm font-medium text-foreground;
+    box-shadow: 0 1px 2px hsl(var(--shadow-color) / 0.06);
+  }
+  .btn-secondary:hover {
+    @apply bg-muted;
+    border-color: hsl(var(--primary) / 0.35);
+  }
+  .card {
+    @apply rounded-xl border border-border bg-card;
+    box-shadow: 0 1px 2px hsl(var(--shadow-color) / 0.05), 0 1px 3px hsl(var(--shadow-color) / 0.04);
+  }
+  .card-lift:hover {
+    box-shadow: 0 4px 12px hsl(var(--shadow-color) / 0.1), 0 2px 4px hsl(var(--shadow-color) / 0.06);
+    transform: translateY(-2px);
+    border-color: hsl(var(--primary) / 0.3);
+  }
+  .input-base {
+    @apply w-full rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none;
+  }
+  .input-base:focus {
+    border-color: hsl(var(--primary) / 0.6);
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.12);
+  }
+}
+
+/* ---------- NotebookLM-style dark workspace (scoped) ---------- */
+.nb-dark {
+  color-scheme: dark;             /* native inputs/selects/checkboxes/scrollbars go dark */
+  --background: 220 7% 8%;        /* ~#131314 near-black */
+  --foreground: 0 0% 90%;         /* ~#e6e6e6 */
+  --card: 220 6% 12%;             /* ~#1d1e20 panes */
+  --muted: 220 6% 17%;            /* hover / chips */
+  --muted-foreground: 220 6% 64%; /* secondary text */
+  --primary: 217 90% 74%;         /* NotebookLM blue */
+  --primary-foreground: 220 30% 10%;
+  --accent-from: 217 90% 72%;
+  --accent-to: 250 84% 76%;
+  --border: 220 6% 22%;
+  --ring: 217 90% 74%;
+  --shadow-color: 220 40% 2%;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+/* Flat dark surface for the elevated panes */
+.nb-pane {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 14px;
+}
+.nb-card {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+.nb-card:hover {
+  background: hsl(var(--muted));
+  border-color: hsl(var(--primary) / 0.45);
+  transform: translateY(-1px);
+}
+
+/* ---------- Vibrant workspace polish ---------- */
+.grad-text {
+  background-image: linear-gradient(120deg, hsl(var(--accent-from)), hsl(var(--accent-to)));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+/* Tinted glass surface for the side panes */
+.pane-surface {
+  background:
+    radial-gradient(420px 220px at 0% 0%, hsl(var(--accent-from) / 0.06), transparent 70%),
+    hsl(var(--card) / 0.55);
+  backdrop-filter: blur(4px);
+}
+/* Vibrant gradient fills reused across the workspace */
+.grad-fill {
+  background-image: linear-gradient(135deg, hsl(var(--accent-from)), hsl(var(--accent-to)));
+  color: #fff;
+}
+.grad-fill-green {
+  background-image: linear-gradient(135deg, hsl(152 76% 44%), hsl(160 84% 36%));
+  color: #fff;
+}
+.chat-bubble-user {
+  background-image: linear-gradient(135deg, hsl(var(--accent-from)), hsl(var(--accent-to)));
+  color: #fff;
+  box-shadow: 0 4px 16px hsl(var(--accent-to) / 0.3);
+}
+.btn-send {
+  background-image: linear-gradient(135deg, hsl(var(--accent-from)), hsl(var(--accent-to)));
+  color: #fff;
+  box-shadow: 0 2px 10px hsl(var(--accent-to) / 0.42);
+}
+.btn-send:hover:not(:disabled) {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px hsl(var(--accent-to) / 0.5);
+}
+.tab-active {
+  background-image: linear-gradient(135deg, hsl(var(--accent-from)), hsl(var(--accent-to)));
+  color: #fff;
+  box-shadow: 0 2px 8px hsl(var(--accent-to) / 0.3);
+}
+.ring-focus:focus-within {
+  border-color: hsl(var(--primary) / 0.55);
+  box-shadow: 0 0 0 4px hsl(var(--primary) / 0.12), 0 8px 24px hsl(var(--accent-to) / 0.12);
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-rise { animation: rise 0.28s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes dotpulse {
+  0%, 80%, 100% { transform: scale(0.5); opacity: 0.35; }
+  40% { transform: scale(1); opacity: 1; }
+}
+.dotpulse { animation: dotpulse 1.25s infinite ease-in-out; }
+
+@keyframes splashpop {
+  from { opacity: 0; transform: scale(0.82) translateY(6px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.animate-splashpop { animation: splashpop 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* ---------- Markdown prose (AI brief) ---------- */
+.prose-brief {
+  color: hsl(var(--foreground));
+  line-height: 1.65;
+  font-size: 14px;
+}
+.prose-brief > :first-child { margin-top: 0; }
+.prose-brief h1 { font-size: 1.45rem; font-weight: 700; margin: 1.2em 0 0.5em; letter-spacing: -0.015em; }
+.prose-brief h2 { font-size: 1.12rem; font-weight: 650; margin: 1.5em 0 0.4em; padding-bottom: 0.3em; border-bottom: 1px solid hsl(var(--border)); }
+.prose-brief h3 { font-size: 0.98rem; font-weight: 650; margin: 1.1em 0 0.3em; }
+.prose-brief p { margin: 0.55em 0; }
+.prose-brief ul, .prose-brief ol { margin: 0.5em 0; padding-left: 1.4em; }
+.prose-brief ul { list-style: disc; }
+.prose-brief ol { list-style: decimal; }
+.prose-brief li { margin: 0.25em 0; }
+.prose-brief strong { font-weight: 650; }
+.prose-brief a { color: hsl(var(--primary)); text-decoration: underline; }
+.prose-brief code { background: hsl(var(--muted)); padding: 0.1em 0.3em; border-radius: 4px; font-size: 0.85em; }
+.prose-brief hr { margin: 1.5em 0; border-color: hsl(var(--border)); }
+.prose-brief blockquote { border-left: 3px solid hsl(var(--primary) / 0.4); padding-left: 1em; color: hsl(var(--muted-foreground)); }
+.prose-brief table { border-collapse: collapse; margin: 0.75em 0; font-size: 0.9em; }
+.prose-brief th, .prose-brief td { border: 1px solid hsl(var(--border)); padding: 0.4em 0.6em; text-align: left; }
+.prose-brief th { background: hsl(var(--muted)); }
+
+/* Compact markdown for chat bubbles */
+.prose-chat { color: hsl(var(--foreground)); line-height: 1.55; }
+.prose-chat > :first-child { margin-top: 0; }
+.prose-chat > :last-child { margin-bottom: 0; }
+.prose-chat p { margin: 0.4em 0; }
+.prose-chat h1, .prose-chat h2, .prose-chat h3 { font-weight: 650; margin: 0.7em 0 0.3em; font-size: 1em; }
+.prose-chat ul, .prose-chat ol { margin: 0.4em 0; padding-left: 1.25em; }
+.prose-chat ul { list-style: disc; }
+.prose-chat ol { list-style: decimal; }
+.prose-chat li { margin: 0.15em 0; }
+.prose-chat strong { font-weight: 650; }
+.prose-chat a { color: hsl(var(--primary)); text-decoration: underline; }
+.prose-chat code { background: hsl(var(--muted)); padding: 0.1em 0.3em; border-radius: 4px; font-size: 0.85em; }
+.prose-chat table { border-collapse: collapse; margin: 0.5em 0; font-size: 0.9em; }
+.prose-chat th, .prose-chat td { border: 1px solid hsl(var(--border)); padding: 0.3em 0.5em; text-align: left; }
+.prose-chat th { background: hsl(var(--muted)); }
+
+.scrollbar-thin::-webkit-scrollbar { height: 8px; width: 8px; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 9999px; }
+
+@keyframes toploader {
+  0% { transform: translateX(-100%) scaleX(0.4); }
+  50% { transform: translateX(0%) scaleX(0.7); }
+  100% { transform: translateX(100%) scaleX(0.4); }
+}

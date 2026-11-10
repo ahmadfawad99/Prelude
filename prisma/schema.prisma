@@ -1,0 +1,427 @@
+// PreSales Tool — database schema
+// Milestone 0 defines the full graph from docs/03; peripheral audit tables use
+// scalar user-id references for now and gain FK relations as they are built out.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+//  Auth.js (NextAuth v5) adapter models + app user fields
+// ============================================================
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  roles         Role[]    @default([VIEWER])
+  prefs         Json? // notification preferences
+  createdAt     DateTime  @default(now())
+
+  accounts Account[]
+  sessions Session[]
+
+  reportedInquiries Inquiry[] @relation("reporter")
+  assignedInquiries Inquiry[] @relation("assignee")
+}
+
+enum Role {
+  ADMIN
+  PRESALES
+  TECHNICAL
+  VIEWER
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+// ============================================================
+//  Domain
+// ============================================================
+
+model Client {
+  id        String    @id @default(cuid())
+  name      String
+  domain    String?
+  notes     String?
+  createdAt DateTime  @default(now())
+  inquiries Inquiry[]
+}
+
+model Inquiry {
+  id       String         @id @default(cuid())
+  key      String         @unique // e.g. PRE-1024
+  title    String
+  type     InquiryType[]  @default([])
+  status   InquiryStatus  @default(REQUEST)
+  priority Priority       @default(MEDIUM)
+  source   String?
+  startDate DateTime?
+  dueDate  DateTime?
+  tags     String[]       @default([])
+  wbsEnabled  Boolean @default(true)
+  planEnabled Boolean @default(true)
+
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id])
+
+  reporterId String
+  reporter   User   @relation("reporter", fields: [reporterId], references: [id])
+
+  assigneeId String?
+  assignee   User?   @relation("assignee", fields: [assigneeId], references: [id])
+
+  summary     AiSummary?
+  wbs         Wbs?
+  plan        ProjectPlan?
+  diagram     Diagram?
+  sources     Source[]
+  chat        ChatMessage[]
+  attachments Attachment[]
+  comments    Comment[]
+  pocLinks    PocLink[]
+  emailLinks  EmailThreadLink[]
+  activity    Activity[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([assigneeId])
+  @@index([clientId])
+}
+
+enum InquiryType {
+  CALL_REQUIRED
+  RFP_BASED
+  POC_REQUIRED
+  ESTIMATION_ONLY
+}
+
+enum InquiryStatus {
+  REQUEST
+  UNDERSTANDING
+  DESIGN_POC_PROTOTYPE
+  ESTIMATES
+  REVIEW
+  HANDOFF
+  WON
+  LOST
+  ARCHIVED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum ApprovalStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  REJECTED
+}
+
+model AiSummary {
+  id            String   @id @default(cuid())
+  inquiryId     String   @unique
+  inquiry       Inquiry  @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  transcript    String?  @db.Text
+  document      String?  @db.Text // rich markdown brief (primary)
+  executive     String?  @db.Text
+  highlights    String[]
+  painPoints    String[]
+  clientWants   String[]
+  actionItems   Json // [{text, owner?, due?}]
+  provider      String // "anthropic" | "openai"
+  model         String
+  promptVer     String
+  tokensCost    Json?
+  version       Int      @default(1)
+  editedByHuman Boolean  @default(false)
+  createdAt     DateTime @default(now())
+}
+
+model Wbs {
+  id               String         @id @default(cuid())
+  inquiryId        String         @unique
+  inquiry          Inquiry        @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  status           ApprovalStatus @default(DRAFT)
+  extractedBudget   String? // budget stated in the RFP, if any
+  extractedTimeline String? // timeline stated in the RFP, if any
+  items            WbsItem[]
+  approvedById String?
+  approvedAt   DateTime?
+  version      Int            @default(1)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model WbsItem {
+  id          String      @id @default(cuid())
+  wbsId       String
+  wbs         Wbs         @relation(fields: [wbsId], references: [id], onDelete: Cascade)
+  module      String? // the "tab" dimension (e.g. Static Landing Page)
+  epic        String?
+  feature     String?
+  description String?     @db.Text
+  sprint      String?
+  complexity  Complexity?
+  engineers   Int?
+  storyPoints Float?
+  hours       Float?
+  startDate   DateTime?
+  endDate     DateTime?
+  priority    Priority?
+  release     String?
+  order       Int         @default(0)
+
+  @@index([wbsId])
+}
+
+enum Complexity {
+  LOW
+  LOW_MEDIUM
+  MEDIUM
+}
+
+model Source {
+  id        String     @id @default(cuid())
+  inquiryId String
+  inquiry   Inquiry    @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  kind      SourceKind
+  name      String
+  url       String?
+  content   String     @db.Text // extracted text
+  addedById String
+  createdAt DateTime   @default(now())
+
+  @@index([inquiryId])
+}
+
+enum SourceKind {
+  FILE
+  URL
+  TEXT
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  inquiryId String
+  inquiry   Inquiry  @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  role      ChatRole
+  content   String   @db.Text
+  action    String? // executed action, if any (e.g. "generate_wbs")
+  authorId  String?
+  createdAt DateTime @default(now())
+
+  @@index([inquiryId])
+}
+
+enum ChatRole {
+  USER
+  ASSISTANT
+}
+
+// AI-generated visual (Mermaid flowchart / diagram) for a lead. One per lead,
+// overwritten + version-bumped on regenerate.
+model Diagram {
+  id        String   @id @default(cuid())
+  inquiryId String   @unique
+  inquiry   Inquiry  @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  title     String   @default("Flow diagram")
+  code      String   @db.Text // mermaid source
+  provider  String?
+  model     String?
+  version   Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Saved past versions of a lead's diagram, for the history / restore switcher.
+model DiagramVersion {
+  id        String   @id @default(cuid())
+  inquiryId String
+  version   Int
+  code      String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([inquiryId])
+}
+
+model ResourceRate {
+  id               String  @id @default(cuid())
+  role             String // "PM", "SSE - Full stack", ...
+  monthlyHours     Float   @default(160)
+  ratePerHour      Float
+  effectiveMonthly Float?
+  version          Int     @default(1)
+  active           Boolean @default(true)
+}
+
+model ProjectPlan {
+  id           String         @id @default(cuid())
+  inquiryId    String         @unique
+  inquiry      Inquiry        @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  templateId   String?
+  status       ApprovalStatus @default(DRAFT)
+  marginPct    Float          @default(0.1) // for budget ranges
+  summaryData  Json? // editable Summary-tab content (team, budgets, deliverables)
+  overview     String? @db.Text // AI-generated executive project overview (markdown)
+  sprints      SprintPlan[]
+  approvedById String?
+  approvedAt   DateTime?
+  version      Int            @default(1)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model SprintPlan {
+  id           String             @id @default(cuid())
+  planId       String
+  plan         ProjectPlan        @relation(fields: [planId], references: [id], onDelete: Cascade)
+  releaseGroup String?
+  sprintNo     Int
+  startDate    DateTime?
+  endDate      DateTime?
+  summary      String?            @db.Text
+  allocations  SprintAllocation[]
+  order        Int                @default(0)
+
+  @@index([planId])
+}
+
+model SprintAllocation {
+  id          String     @id @default(cuid())
+  sprintId    String
+  sprint      SprintPlan @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+  role        String // matches ResourceRate.role
+  fteFraction Float // 0.25, 0.5, 1.0
+
+  @@index([sprintId])
+}
+
+model ProjectPlanTemplate {
+  id      String  @id @default(cuid())
+  name    String
+  layout  Json
+  version Int     @default(1)
+  active  Boolean @default(true)
+}
+
+// ---- Peripheral tables (scalar user refs for now) ----
+
+model Attachment {
+  id           String    @id @default(cuid())
+  inquiryId    String
+  inquiry      Inquiry   @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  filename     String
+  mime         String
+  size         Int
+  storageKey   String
+  version      Int       @default(1)
+  deletedAt    DateTime?
+  uploadedById String
+  createdAt    DateTime  @default(now())
+
+  @@index([inquiryId])
+}
+
+model PocLink {
+  id        String  @id @default(cuid())
+  inquiryId String
+  inquiry   Inquiry @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  url       String
+  label     String?
+  status    String?
+  notes     String? @db.Text
+}
+
+model EmailThreadLink {
+  id            String   @id @default(cuid())
+  inquiryId     String
+  inquiry       Inquiry  @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  gmailThreadId String
+  subject       String?
+  snippet       String?
+  linkedById    String
+  createdAt     DateTime @default(now())
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  inquiryId String
+  inquiry   Inquiry  @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  authorId  String
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([inquiryId])
+}
+
+model Activity {
+  id        String   @id @default(cuid())
+  inquiryId String
+  inquiry   Inquiry  @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  actorId   String
+  action    String
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  @@index([inquiryId])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  type      String
+  payload   Json
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+// Atomic counters (e.g. human-friendly inquiry keys PRE-1001, PRE-1002, ...).
+model Counter {
+  name  String @id
+  value Int    @default(0)
+}
